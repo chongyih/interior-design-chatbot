@@ -5,7 +5,16 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      backgroundImage: {
+        "down-arrow": "url('/src/assets/down-arrow.svg')",
+      },
+      backgroundColor: {
+        "main": "#94a3b8" // bg-slate-400
+      }
+    },
   },
-  plugins: [],
+  plugins: [
+    require("tailwind-scrollbar")
+  ],
 }
