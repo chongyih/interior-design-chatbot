@@ -1,16 +1,18 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import ScrollToBottom from "react-scroll-to-bottom"
+import ImageGallery from "react-image-gallery"
 import IconButton from "@mui/material/IconButton"
 import SendIcon from "@mui/icons-material/Send"
 import { useGptMutation } from "./redux/gptApiSlice"
 import { useDalleMutation } from "./redux/dalleApiSlice"
 import { useAlert } from "react-alert"
+import Menu from "./components/Menu"
 
 interface IGPTPrompt {
 	UserPrompt: string
 	GPTPrompt?: string
 	DALLEPrompts?: string[]
-	ImageLinks?: string[]
+	ImageB64?: string[]
 }
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
 	const [loadingDALLEIndex, setLoadingDALLEIndex] = useState<number>(-1)
 	const [error, setError] = useState<string>("")
 	const [chatHistory, setChatHistory] = useState<IGPTPrompt[]>([])
+	const [baseImage, setBaseImage] = useState("")
+	const galleryRef = useRef<ImageGallery>()
 
 	const [submitGPT] = useGptMutation()
 	const [submitDALLE] = useDalleMutation()
@@ -30,8 +34,10 @@ function App() {
 		setError("")
 	}, [error])
 
-	const sendPrompt = async () => {
+	const sendPrompt = async (e: any) => {
+		e.preventDefault()
 		try {
+			setPrompt("")
 			setChatHistory((prev) => [
 				...prev,
 				{
@@ -42,7 +48,7 @@ function App() {
 			setLoadingGPT(true)
 			const { data } = await submitGPT({
 				prompt: prompt,
-				chat_id: "78572413-8f69-4e3e-a196-fc808209b655",
+				chat_id: "1162ba9a-9081-4805-a28d-1554101ad76a",
 			})
 			setLoadingGPT(false)
 
@@ -72,7 +78,7 @@ function App() {
 				setChatHistory((prev) => {
 					const updatedChatHistory = [...prev]
 					updatedChatHistory[index]
-						? (updatedChatHistory[index].ImageLinks = [])
+						? (updatedChatHistory[index].ImageB64 = [])
 						: null
 					return updatedChatHistory
 				})
@@ -92,21 +98,27 @@ function App() {
 			}
 		}
 
-		const imageLink = await sendRequest()
+		const imageB64 = await sendRequest()
 		setLoadingDALLE(false)
 		setLoadingDALLEIndex(-1)
-		imageLink &&
+		imageB64 &&
 			setChatHistory((prev) => {
 				const updatedChatHistory = [...prev]
-				updatedChatHistory[index].ImageLinks = imageLink
+				updatedChatHistory[index].ImageB64 = imageB64
 				return updatedChatHistory
 			})
 		setPrompt("")
 	}
 
+	const selectBaseImage = (index: number): void => {
+		setBaseImage(
+			chatHistory[index].ImageB64![galleryRef?.current?.getCurrentIndex()!]
+		)
+	}
+
 	return (
 		<main className="min-h-screen h-full flex text-white overflow-hidden">
-			<div className="bg-neutral-900 w-60 h-screen fixed">Menu</div>
+			<Menu baseImage={baseImage} />
 			<div className="bg-gray-800 ml-60 h-screen w-full flex flex-col relative">
 				<ScrollToBottom
 					followButtonClassName="bg-down-arrow bg-[length:75%_75%] bg-center mb-[45px] bg-no-repeat bg-white bg-opacity-0 hover:bg-opacity-100"
@@ -138,7 +150,7 @@ function App() {
 										</div>
 									</>
 								)}
-								{loadingGPT && (
+								{loadingGPT && index === chatHistory.length - 1 && (
 									<>
 										<div className="flex items-center mb-1">
 											<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
@@ -188,35 +200,44 @@ function App() {
 										<pre>Generating images... Please wait a few seconds.</pre>
 									</div>
 								)}
-								<div className="grid grid-cols-3 gap-4">
-									{chat.ImageLinks &&
-										chat.ImageLinks.map((imgSrc, index) => (
-											<img
-												key={index}
-												src={imgSrc}
-												alt={`Generated Image ${index + 1}`}
-												className=""
-											/>
-										))}
+								<div className="">
+									{chat.ImageB64 && chat.ImageB64[0] && (
+										<ImageGallery
+											//@ts-ignore
+											ref={galleryRef}
+											onClick={(e) => selectBaseImage(index)}
+											items={chat.ImageB64.map((image) => {
+												return {
+													original: `data:img/png;base64,${image}`,
+													thumbnail: `data:img/png;base64,${image}`,
+												}
+											})}
+										/>
+									)}
 								</div>
 							</div>
 						</div>
 					))}
 				</ScrollToBottom>
 				<div className="absolute bottom-0 right-0 h-[85px] w-full flex items-center justify-center z-10">
-					<input
-						type="text"
-						id="prompt"
-						className="bg-slate-600 w-full h-1/2 ml-2 mr-4 p-3 rounded-md focus:outline-0"
-						value={prompt}
-						onChange={(e) => setPrompt(e.target.value)}
-					/>
-					<IconButton
-						className="hover:border-2 hover:!bg-gray-900 !absolute right-6"
-						onClick={sendPrompt}
+					<form
+						onSubmit={sendPrompt}
+						className="bg-slate-600 w-full h-1/2 ml-2 mr-4 rounded-md focus:outline-0 flex items-center justify-center"
 					>
-						<SendIcon htmlColor="white" />
-					</IconButton>
+						<input
+							type="text"
+							id="prompt"
+							className="bg-slate-600 w-full h-full p-4 rounded-md focus:outline-0"
+							value={prompt}
+							onChange={(e) => setPrompt(e.target.value)}
+						/>
+						<IconButton
+							className="hover:border-2 hover:!bg-gray-900 !absolute right-6"
+							type="submit"
+						>
+							<SendIcon htmlColor="white" />
+						</IconButton>
+					</form>
 				</div>
 			</div>
 		</main>

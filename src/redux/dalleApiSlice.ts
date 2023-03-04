@@ -9,9 +9,16 @@ export const dalleApiSlice = apiSlice.injectEndpoints({
                 body: { ...prompt }
             })
         }),
+        editDalle: builder.mutation({
+            query: (params: any) => ({
+                url: '/dalle/edit',
+                method: 'POST',
+                body: { ...params }
+            })
+        }),
     })
 })
 
 export const {
-    useDalleMutation
+    useDalleMutation, useEditDalleMutation
 } = dalleApiSlice

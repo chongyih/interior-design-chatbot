@@ -7,3 +7,7 @@
      @apply bg-gray-800 text-white;
     }
 }
+
+.image-gallery-content:not(.fullscreen) {
+    @apply flex flex-col justify-center m-auto !w-[600px] !max-h-[800px];
+}
