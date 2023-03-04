@@ -1,25 +1,107 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import ScrollToBottom from "react-scroll-to-bottom"
 import IconButton from "@mui/material/IconButton"
 import SendIcon from "@mui/icons-material/Send"
 import { useGptMutation } from "./redux/gptApiSlice"
 import { useDalleMutation } from "./redux/dalleApiSlice"
+import { useAlert } from "react-alert"
 
 interface IGPTPrompt {
-	GPTPrompt: string
-	DALLEPrompt?: string[]
+	UserPrompt: string
+	GPTPrompt?: string
+	DALLEPrompts?: string[]
+	ImageLinks?: string[]
 }
 
 function App() {
 	const [prompt, setPrompt] = useState<string>("")
+	const [loadingGPT, setLoadingGPT] = useState<boolean>(false)
+	const [loadingDALLE, setLoadingDALLE] = useState<boolean>(false)
+	const [loadingDALLEIndex, setLoadingDALLEIndex] = useState<number>(-1)
+	const [error, setError] = useState<string>("")
+	const [chatHistory, setChatHistory] = useState<IGPTPrompt[]>([])
+
 	const [submitGPT] = useGptMutation()
 	const [submitDALLE] = useDalleMutation()
+	const alert = useAlert()
+
+	useEffect(() => {
+		error && alert.show(error, { type: "error" })
+		setError("")
+	}, [error])
 
 	const sendPrompt = async () => {
-		const { data } = await submitGPT({ prompt: prompt })
-		console.log(data)
-		const dalleResp = await submitDALLE({ prompt: data.DALLEPrompts[0] })
-		console.log(dalleResp)
+		try {
+			setChatHistory((prev) => [
+				...prev,
+				{
+					UserPrompt: prompt,
+				},
+			])
+
+			setLoadingGPT(true)
+			const { data } = await submitGPT({
+				prompt: prompt,
+				chat_id: "78572413-8f69-4e3e-a196-fc808209b655",
+			})
+			setLoadingGPT(false)
+
+			setChatHistory((prev) => {
+				const updatedChatHistory = [...prev]
+				updatedChatHistory[updatedChatHistory.length - 1].GPTPrompt =
+					data?.GPTPrompt
+				updatedChatHistory[updatedChatHistory.length - 1].DALLEPrompts =
+					data?.DALLEPrompts
+				return updatedChatHistory
+			})
+		} catch (error) {
+			console.error(error)
+			setError("Error generating Interio AI response. Please try again later.")
+		}
+	}
+
+	const sendDALLEPrompt = async (index: number, prompt: string) => {
+		const MAX_RETRIES = 5
+		const INITIAL_DELAY = 1000 // in milliseconds
+		let retryCount = 0
+
+		const sendRequest = async (): Promise<any> => {
+			try {
+				setLoadingDALLE(true)
+				setLoadingDALLEIndex(index)
+				setChatHistory((prev) => {
+					const updatedChatHistory = [...prev]
+					updatedChatHistory[index]
+						? (updatedChatHistory[index].ImageLinks = [])
+						: null
+					return updatedChatHistory
+				})
+				const { data } = await submitDALLE({ prompt })
+				return data
+			} catch (error) {
+				console.error(error)
+				if (retryCount >= MAX_RETRIES) {
+					setError("Error generating DALL-E image. Please try again later.")
+					throw new Error("Maximum number of retries reached")
+				}
+				const delay = INITIAL_DELAY * Math.pow(2, retryCount)
+				retryCount++
+				console.log(`Retrying in ${delay}ms`)
+				await new Promise((resolve) => setTimeout(resolve, delay))
+				return await sendRequest()
+			}
+		}
+
+		const imageLink = await sendRequest()
+		setLoadingDALLE(false)
+		setLoadingDALLEIndex(-1)
+		imageLink &&
+			setChatHistory((prev) => {
+				const updatedChatHistory = [...prev]
+				updatedChatHistory[index].ImageLinks = imageLink
+				return updatedChatHistory
+			})
+		setPrompt("")
 	}
 
 	return (
@@ -31,34 +113,95 @@ function App() {
 					className="h-[97%] w-full"
 					scrollViewClassName="scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 px-10 py-4"
 				>
-					{/* <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam hendrerit convallis risus quis interdum. Vestibulum semper posuere vestibulum. Donec sit amet feugiat lectus. Sed rutrum nunc eu dui iaculis, in convallis purus elementum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet lorem ligula. Etiam bibendum, eros a tempor finibus, elit augue elementum felis, nec pretium neque tellus ut ipsum. Nam nec ligula mollis, congue nisi id, commodo orci. Sed scelerisque felis quis scelerisque gravida.
-
-            Cras porttitor sodales leo pretium suscipit. Curabitur tortor enim, congue non nulla a, facilisis porttitor sem. Aliquam erat volutpat. Nulla sagittis gravida eros, et porta lorem volutpat finibus. Nulla suscipit vulputate erat vel vestibulum. Vivamus blandit ligula eget lectus tristique, non varius leo vestibulum. Vestibulum eu ultrices purus. Phasellus vitae orci lobortis, scelerisque erat in, congue nibh. Maecenas in nulla scelerisque, hendrerit mauris vel, posuere ligula. Vivamus malesuada odio at ante hendrerit, vitae volutpat leo pharetra. Vivamus eleifend egestas molestie.
-
-            Nullam sollicitudin magna quam, non ultrices turpis efficitur sed. Morbi cursus nunc quis erat finibus egestas. Maecenas pulvinar ut dolor at suscipit. Integer risus nisl, eleifend dapibus diam id, auctor ultricies ex. Proin vel sagittis lectus, sed commodo erat. Pellentesque at semper augue, a semper enim. Integer in pulvinar magna, at varius erat.
-
-            Proin ac nibh pellentesque, faucibus magna vitae, faucibus nunc. Fusce at rutrum odio. Vivamus quis tincidunt magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ac vulputate mi. Integer fringilla mauris ipsum, vitae ultricies leo ultrices eget. Suspendisse elementum sem vel ex porta dignissim. Praesent non felis sagittis, mollis mi in, laoreet justo. Nam quis blandit turpis. In hac habitasse platea dictumst. Fusce id libero interdum, volutpat lectus molestie, egestas orci. Donec mattis lacinia lorem, non iaculis massa bibendum tincidunt. Cras sagittis, dui vel dignissim mollis, ligula massa maximus velit, a pretium lorem velit tincidunt ex.
-
-            Maecenas eu orci ac risus mattis egestas. Praesent venenatis ultricies ligula eget dictum. Phasellus fermentum ultricies tincidunt. Etiam elementum molestie lorem, in lobortis justo congue eu. Maecenas id aliquam massa. Nulla sodales lacus lectus, id vulputate ligula tincidunt id. Praesent nec viverra purus, eu tincidunt nisi. In vitae ligula vitae turpis elementum egestas vel et risus. Donec commodo magna a erat sollicitudin fringilla.</p>      
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam hendrerit convallis risus quis interdum. Vestibulum semper posuere vestibulum. Donec sit amet feugiat lectus. Sed rutrum nunc eu dui iaculis, in convallis purus elementum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet lorem ligula. Etiam bibendum, eros a tempor finibus, elit augue elementum felis, nec pretium neque tellus ut ipsum. Nam nec ligula mollis, congue nisi id, commodo orci. Sed scelerisque felis quis scelerisque gravida.
-
-Cras porttitor sodales leo pretium suscipit. Curabitur tortor enim, congue non nulla a, facilisis porttitor sem. Aliquam erat volutpat. Nulla sagittis gravida eros, et porta lorem volutpat finibus. Nulla suscipit vulputate erat vel vestibulum. Vivamus blandit ligula eget lectus tristique, non varius leo vestibulum. Vestibulum eu ultrices purus. Phasellus vitae orci lobortis, scelerisque erat in, congue nibh. Maecenas in nulla scelerisque, hendrerit mauris vel, posuere ligula. Vivamus malesuada odio at ante hendrerit, vitae volutpat leo pharetra. Vivamus eleifend egestas molestie.
-
-Nullam sollicitudin magna quam, non ultrices turpis efficitur sed. Morbi cursus nunc quis erat finibus egestas. Maecenas pulvinar ut dolor at suscipit. Integer risus nisl, eleifend dapibus diam id, auctor ultricies ex. Proin vel sagittis lectus, sed commodo erat. Pellentesque at semper augue, a semper enim. Integer in pulvinar magna, at varius erat.
-
-Proin ac nibh pellentesque, faucibus magna vitae, faucibus nunc. Fusce at rutrum odio. Vivamus quis tincidunt magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ac vulputate mi. Integer fringilla mauris ipsum, vitae ultricies leo ultrices eget. Suspendisse elementum sem vel ex porta dignissim. Praesent non felis sagittis, mollis mi in, laoreet justo. Nam quis blandit turpis. In hac habitasse platea dictumst. Fusce id libero interdum, volutpat lectus molestie, egestas orci. Donec mattis lacinia lorem, non iaculis massa bibendum tincidunt. Cras sagittis, dui vel dignissim mollis, ligula massa maximus velit, a pretium lorem velit tincidunt ex.
-
-Maecenas eu orci ac risus mattis egestas. Praesent venenatis ultricies ligula eget dictum. Phasellus fermentum ultricies tincidunt. Etiam elementum molestie lorem, in lobortis justo congue eu. Maecenas id aliquam massa. Nulla sodales lacus lectus, id vulputate ligula tincidunt id. Praesent nec viverra purus, eu tincidunt nisi. In vitae ligula vitae turpis elementum egestas vel et risus. Donec commodo magna a erat sollicitudin fringilla.</p>
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam hendrerit convallis risus quis interdum. Vestibulum semper posuere vestibulum. Donec sit amet feugiat lectus. Sed rutrum nunc eu dui iaculis, in convallis purus elementum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet lorem ligula. Etiam bibendum, eros a tempor finibus, elit augue elementum felis, nec pretium neque tellus ut ipsum. Nam nec ligula mollis, congue nisi id, commodo orci. Sed scelerisque felis quis scelerisque gravida.
-
-            Cras porttitor sodales leo pretium suscipit. Curabitur tortor enim, congue non nulla a, facilisis porttitor sem. Aliquam erat volutpat. Nulla sagittis gravida eros, et porta lorem volutpat finibus. Nulla suscipit vulputate erat vel vestibulum. Vivamus blandit ligula eget lectus tristique, non varius leo vestibulum. Vestibulum eu ultrices purus. Phasellus vitae orci lobortis, scelerisque erat in, congue nibh. Maecenas in nulla scelerisque, hendrerit mauris vel, posuere ligula. Vivamus malesuada odio at ante hendrerit, vitae volutpat leo pharetra. Vivamus eleifend egestas molestie.
-
-            Nullam sollicitudin magna quam, non ultrices turpis efficitur sed. Morbi cursus nunc quis erat finibus egestas. Maecenas pulvinar ut dolor at suscipit. Integer risus nisl, eleifend dapibus diam id, auctor ultricies ex. Proin vel sagittis lectus, sed commodo erat. Pellentesque at semper augue, a semper enim. Integer in pulvinar magna, at varius erat.
-
-            Proin ac nibh pellentesque, faucibus magna vitae, faucibus nunc. Fusce at rutrum odio. Vivamus quis tincidunt magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ac vulputate mi. Integer fringilla mauris ipsum, vitae ultricies leo ultrices eget. Suspendisse elementum sem vel ex porta dignissim. Praesent non felis sagittis, mollis mi in, laoreet justo. Nam quis blandit turpis. In hac habitasse platea dictumst. Fusce id libero interdum, volutpat lectus molestie, egestas orci. Donec mattis lacinia lorem, non iaculis massa bibendum tincidunt. Cras sagittis, dui vel dignissim mollis, ligula massa maximus velit, a pretium lorem velit tincidunt ex.
-
-            Maecenas eu orci ac risus mattis egestas. Praesent venenatis ultricies ligula eget dictum. Phasellus fermentum ultricies tincidunt. Etiam elementum molestie lorem, in lobortis justo congue eu. Maecenas id aliquam massa. Nulla sodales lacus lectus, id vulputate ligula tincidunt id. Praesent nec viverra purus, eu tincidunt nisi. In vitae ligula vitae turpis elementum egestas vel et risus. Donec commodo magna a erat sollicitudin fringilla.</p>  
-        <div className='h-[70px]'/> */}
+					{chatHistory.map((chat, index) => (
+						<div key={index} className="flex flex-col mb-4">
+							<div className="flex flex-col mb-2">
+								<div className="flex items-center mb-1 justify-end">
+									<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
+									<p className="text-sm">User</p>
+								</div>
+								<div className="bg-gray-700 rounded-lg p-4">
+									<pre className="whitespace-pre-wrap text-left">
+										{chat.UserPrompt}
+									</pre>
+								</div>
+								{chat.GPTPrompt && (
+									<>
+										<div className="flex items-center mb-1">
+											<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
+											<p className="text-sm">Interio AI</p>
+										</div>
+										<div className="bg-gray-700 rounded-lg p-4">
+											<pre className="whitespace-pre-wrap text-left">
+												{chat.GPTPrompt}
+											</pre>
+										</div>
+									</>
+								)}
+								{loadingGPT && (
+									<>
+										<div className="flex items-center mb-1">
+											<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
+											<p className="text-sm">Interio AI</p>
+										</div>
+										<div className="bg-gray-700 rounded-lg p-3">
+											<pre>
+												Generating response... Please wait a few seconds.
+											</pre>
+										</div>
+									</>
+								)}
+								{chat.DALLEPrompts && (
+									<div className="bg-gray-700 rounded-lg p-3">
+										<pre>
+											Click on one of the prompts to and I will generate some
+											images!
+										</pre>
+										{
+											<div className="p-2">
+												<button
+													onClick={(e) => sendDALLEPrompt(index, prompt)}
+													className="hover:bg-gray-600 rounded-lg p-1"
+												>
+													<pre className="whitespace-pre-wrap text-left">
+														{`1.`} {chat.UserPrompt}
+													</pre>
+												</button>
+											</div>
+										}
+										{chat.DALLEPrompts?.map((dalle, dalleIndex) => (
+											<div key={index} className="p-2">
+												<button
+													onClick={(e) => sendDALLEPrompt(index, dalle)}
+													className="hover:bg-gray-600 rounded-lg p-1"
+												>
+													<pre className="whitespace-pre-wrap text-left">
+														{`${dalleIndex + 2}.`} {dalle}
+													</pre>
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+								{loadingDALLE && index === loadingDALLEIndex && (
+									<div className="bg-gray-700 rounded-lg p-3">
+										<pre>Generating images... Please wait a few seconds.</pre>
+									</div>
+								)}
+								<div className="grid grid-cols-3 gap-4">
+									{chat.ImageLinks &&
+										chat.ImageLinks.map((imgSrc, index) => (
+											<img
+												key={index}
+												src={imgSrc}
+												alt={`Generated Image ${index + 1}`}
+												className=""
+											/>
+										))}
+								</div>
+							</div>
+						</div>
+					))}
 				</ScrollToBottom>
 				<div className="absolute bottom-0 right-0 h-[85px] w-full flex items-center justify-center z-10">
 					<input

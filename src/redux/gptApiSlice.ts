@@ -4,9 +4,9 @@ export const gptApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder: any) => ({
         gpt: builder.mutation({
             query: (prompt: any) => ({
-                url: '/gpt3',
+                url: '/gpt',
                 method: 'POST',
-                body: { ...prompt }
+                body: { ...prompt, user_id: localStorage.getItem('user_id') }
             })
         }),
     })
