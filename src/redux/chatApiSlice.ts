@@ -15,10 +15,17 @@ export const chatApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: { ...chat_id }
             })
-        })
+        }),
+        createChat: builder.mutation({
+            query: (user_id: any) => ({
+                url: '/chat/create',
+                method: 'POST',
+                body: { ...user_id }
+            })
+        }),
     })
 })
 
 export const {
-    useGetChatListMutation, useGetChatHistoryMutation
+    useGetChatListMutation, useGetChatHistoryMutation, useCreateChatMutation
 } = chatApiSlice

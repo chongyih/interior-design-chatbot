@@ -5,6 +5,7 @@ import ChatWindow from "../components/ChatWindow"
 import { IGPTPrompt } from "../types/prompt"
 import TextInput from "../components/TextInput"
 import {
+	useCreateChatMutation,
 	useGetChatHistoryMutation,
 	useGetChatListMutation,
 } from "../redux/chatApiSlice"
@@ -19,6 +20,7 @@ const ChatBot = () => {
 	const alert = useAlert()
 	const [getChatList] = useGetChatListMutation()
 	const [getChatHistory] = useGetChatHistoryMutation()
+	const [createChat] = useCreateChatMutation()
 
 	useEffect(() => {
 		// retrieve list of chat id from endpoint
@@ -27,9 +29,19 @@ const ChatBot = () => {
 				user_id: localStorage.getItem("user_id"),
 			})
 
-			localStorage.setItem("chat_id", resp.data[0])
 			if (resp.error) {
 				setError("Error retrieving chat list. Please try again later.")
+			}
+
+			if (resp.data.length === 0) {
+				const resp = await createChat({
+					user_id: localStorage.getItem("user_id"),
+				})
+
+				localStorage.setItem("chat_id", resp.data)
+				if (resp.error) {
+					setError("Error retrieving chat list. Please try again later.")
+				}
 			}
 		}
 
