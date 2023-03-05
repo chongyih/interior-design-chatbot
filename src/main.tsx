@@ -11,7 +11,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 	<Provider store={store}>
 		<AlertProvider
 			template={AlertTemplate}
-			{...{ position: "top center", timeout: 2000 }}
+			{...{ position: "top center", timeout: 5000 }}
 		>
 			<App />
 		</AlertProvider>
