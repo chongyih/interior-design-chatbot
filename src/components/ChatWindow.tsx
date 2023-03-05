@@ -5,6 +5,8 @@ import ImageGallery from "react-image-gallery"
 import { IGPTPrompt } from "../types/prompt"
 import { useDalleMutation } from "../redux/dalleApiSlice"
 
+import logo from "../assets/logo.png"
+
 const ChatWindow = ({
 	prompt,
 	chatHistory,
@@ -31,7 +33,9 @@ const ChatWindow = ({
 		)
 	}
 
-	const sendDALLEPrompt = async (index: number, prompt: string) => {
+	const sendDALLEPrompt = async (e: any, index: number, prompt: string) => {
+		e.preventDefault()
+
 		const MAX_RETRIES = 5
 		const INITIAL_DELAY = 1000 // in milliseconds
 		let retryCount = 0
@@ -41,10 +45,12 @@ const ChatWindow = ({
 				setLoadingDALLE(true)
 				setLoadingDALLEIndex(index)
 				setChatHistory((prev) => {
-					const updatedChatHistory = [...prev]
-					updatedChatHistory[index]
-						? (updatedChatHistory[index].ImageB64 = [])
-						: null
+					const updatedChatHistory = prev.map((item, i) => {
+						if (i === index) {
+							return { ...item, ImageB64: [] }
+						}
+						return item
+					})
 					return updatedChatHistory
 				})
 				const { data } = await submitDALLE({ prompt })
@@ -62,6 +68,20 @@ const ChatWindow = ({
 				return await sendRequest()
 			}
 		}
+
+		const imageB64 = await sendRequest()
+		setLoadingDALLE(false)
+		setLoadingDALLEIndex(-1)
+		imageB64 &&
+			setChatHistory((prev) => {
+				const updatedChatHistory = prev.map((item, i) => {
+					if (i === index) {
+						return { ...item, ImageB64: imageB64 }
+					}
+					return item
+				})
+				return updatedChatHistory
+			})
 	}
 
 	return (
@@ -75,8 +95,10 @@ const ChatWindow = ({
 					<div key={index} className="flex flex-col mb-4">
 						<div className="flex flex-col mb-2">
 							<div className="flex items-center mb-1 justify-end">
-								<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
-								<p className="text-sm">User</p>
+								<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+									<img src={logo} alt="Interio IO Logo" />
+								</div>
+								<p className="text-sm">{localStorage.getItem("name")}</p>
 							</div>
 							<div className="bg-gray-700 rounded-lg p-4">
 								<pre className="whitespace-pre-wrap text-left">
@@ -86,7 +108,9 @@ const ChatWindow = ({
 							{chat.GPTPrompt && (
 								<>
 									<div className="flex items-center mb-1">
-										<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
+										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+											<img src={logo} alt="Interio IO Logo" />
+										</div>
 										<p className="text-sm">Interio AI</p>
 									</div>
 									<div className="bg-gray-700 rounded-lg p-4">
@@ -99,7 +123,9 @@ const ChatWindow = ({
 							{loadingGPT && index === chatHistory.length - 1 && (
 								<>
 									<div className="flex items-center mb-1">
-										<div className="bg-neutral-900 w-8 h-8 rounded-full mr-2" />
+										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+											<img src={logo} alt="Interio IO Logo" />
+										</div>
 										<p className="text-sm">Interio AI</p>
 									</div>
 									<div className="bg-gray-700 rounded-lg p-3">
@@ -116,7 +142,7 @@ const ChatWindow = ({
 									{
 										<div className="p-2">
 											<button
-												onClick={(e) => sendDALLEPrompt(index, prompt)}
+												onClick={(e) => sendDALLEPrompt(e, index, prompt)}
 												className="hover:bg-gray-600 rounded-lg p-1"
 											>
 												<pre className="whitespace-pre-wrap text-left">
@@ -128,7 +154,7 @@ const ChatWindow = ({
 									{chat.DALLEPrompts?.map((dalle, dalleIndex) => (
 										<div key={index} className="p-2">
 											<button
-												onClick={(e) => sendDALLEPrompt(index, dalle)}
+												onClick={(e) => sendDALLEPrompt(e, index, dalle)}
 												className="hover:bg-gray-600 rounded-lg p-1"
 											>
 												<pre className="whitespace-pre-wrap text-left">

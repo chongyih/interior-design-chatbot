@@ -33,7 +33,7 @@ const TextInput = ({
 			setLoadingGPT(true)
 			const resp = await submitGPT({
 				prompt: prompt,
-				chat_id: "1162ba9a-9081-4805-a28d-1554101ad76a",
+				chat_id: localStorage.getItem("chat_id"),
 			})
 			setLoadingGPT(false)
 
