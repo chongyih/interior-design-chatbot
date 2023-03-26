@@ -1,5 +1,5 @@
 export interface IGPTPrompt {
-    UserPrompt: string
+    UserPrompt?: string
     GPTPrompt?: string
     DALLEPrompts?: string[]
     ImageB64?: string[]

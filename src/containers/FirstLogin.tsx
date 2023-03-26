@@ -19,7 +19,7 @@ const FirstLogin = () => {
 		setCreatingAccount(true)
 
 		const resp = await signUp({ name: name })
-		console.log(resp)
+
 		if (resp.data) {
 			// wait for 2 seconds to simulate account creation
 			setTimeout(() => {
@@ -28,8 +28,7 @@ const FirstLogin = () => {
 				setCreatingAccount(false)
 			}, 2000)
 		} else {
-			console.error("Error creating user")
-			alert.error("Error creating user")
+			alert.error("Error creating account. Please try again.")
 			setCreatingAccount(false)
 		}
 	}

@@ -3,21 +3,28 @@ import ScrollToBottom from "react-scroll-to-bottom"
 import ImageGallery from "react-image-gallery"
 
 import { IGPTPrompt } from "../types/prompt"
-import { useDalleMutation } from "../redux/dalleApiSlice"
+import {
+	useDalleMutation,
+	useEditBaseMutation,
+	useUploadBaseMutation,
+} from "../redux/imageApiSlice"
 
 import logo from "../assets/logo.png"
+import { useAlert } from "react-alert"
 
 const ChatWindow = ({
 	prompt,
 	chatHistory,
 	setChatHistory,
 	loadingGPT,
+	baseImage,
 	setBaseImage,
 }: {
 	prompt: string
 	chatHistory: IGPTPrompt[]
 	setChatHistory: React.Dispatch<React.SetStateAction<IGPTPrompt[]>>
 	loadingGPT: boolean
+	baseImage: string
 	setBaseImage: React.Dispatch<React.SetStateAction<string>>
 }) => {
 	const [loadingDALLE, setLoadingDALLE] = useState<boolean>(false)
@@ -25,12 +32,26 @@ const ChatWindow = ({
 	const [error, setError] = useState<string>("")
 	const galleryRef = useRef<ImageGallery>()
 
+	const alert = useAlert()
 	const [submitDALLE] = useDalleMutation()
+	const [submitControlNet] = useEditBaseMutation()
+	const [uploadBaseImage] = useUploadBaseMutation()
 
-	const selectBaseImage = (index: number): void => {
-		setBaseImage(
-			chatHistory[index].ImageB64![galleryRef?.current?.getCurrentIndex()!]
-		)
+	const selectBaseImage = async (index: number): Promise<void> => {
+		const oldBaseImage = baseImage
+		setBaseImage("")
+		const resp = await uploadBaseImage({
+			chat_id: localStorage.getItem("chat_id") || "",
+			image:
+				chatHistory[index].ImageB64![galleryRef?.current?.getCurrentIndex()!],
+		})
+
+		if (resp.error) {
+			alert.error("Error uploading base image. Please try again later.")
+			setBaseImage(oldBaseImage)
+			return
+		}
+		setBaseImage(resp.data.imageLink)
 	}
 
 	const sendDALLEPrompt = async (e: any, index: number, prompt: string) => {
@@ -53,8 +74,11 @@ const ChatWindow = ({
 					})
 					return updatedChatHistory
 				})
-				const { data } = await submitDALLE({ prompt })
-				return data
+				let resp
+				if (baseImage) {
+					resp = await submitControlNet({ prompt, baseImage })
+				} else resp = await submitDALLE({ prompt })
+				return resp.data
 			} catch (error) {
 				console.error(error)
 				if (retryCount >= MAX_RETRIES) {
@@ -69,14 +93,14 @@ const ChatWindow = ({
 			}
 		}
 
-		const imageB64 = await sendRequest()
+		const ImageB64 = await sendRequest()
 		setLoadingDALLE(false)
 		setLoadingDALLEIndex(-1)
-		imageB64 &&
+		ImageB64 &&
 			setChatHistory((prev) => {
 				const updatedChatHistory = prev.map((item, i) => {
 					if (i === index) {
-						return { ...item, ImageB64: imageB64 }
+						return { ...item, ImageB64: ImageB64 }
 					}
 					return item
 				})
@@ -94,17 +118,21 @@ const ChatWindow = ({
 				{chatHistory.map((chat, index) => (
 					<div key={index} className="flex flex-col mb-4">
 						<div className="flex flex-col mb-2">
-							<div className="flex items-center mb-1 justify-end">
-								<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
-									<img src={logo} alt="Interio IO Logo" />
-								</div>
-								<p className="text-sm">{localStorage.getItem("name")}</p>
-							</div>
-							<div className="bg-gray-700 rounded-lg p-4">
-								<pre className="whitespace-pre-wrap text-left">
-									{chat.UserPrompt}
-								</pre>
-							</div>
+							{chat.UserPrompt && (
+								<>
+									<div className="flex items-center mb-1 justify-end">
+										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+											<img src={logo} alt="Interio IO Logo" />
+										</div>
+										<p className="text-sm">{localStorage.getItem("name")}</p>
+									</div>
+									<div className="bg-gray-700 rounded-lg p-4">
+										<pre className="whitespace-pre-wrap text-left">
+											{chat.UserPrompt}
+										</pre>
+									</div>
+								</>
+							)}
 							{chat.GPTPrompt && (
 								<>
 									<div className="flex items-center mb-1">
@@ -128,13 +156,13 @@ const ChatWindow = ({
 										</div>
 										<p className="text-sm">Interio AI</p>
 									</div>
-									<div className="bg-gray-700 rounded-lg p-3">
+									<div className="bg-gray-700 rounded-lg p-3 mt-2">
 										<pre>Generating response... Please wait a few seconds.</pre>
 									</div>
 								</>
 							)}
 							{chat.DALLEPrompts && (
-								<div className="bg-gray-700 rounded-lg p-3">
+								<div className="bg-gray-700 rounded-lg p-3 mt-2">
 									<pre>
 										Click on one of the prompts to and I will generate some
 										images!
@@ -166,11 +194,11 @@ const ChatWindow = ({
 								</div>
 							)}
 							{loadingDALLE && index === loadingDALLEIndex && (
-								<div className="bg-gray-700 rounded-lg p-3">
+								<div className="bg-gray-700 rounded-lg p-3 mt-2">
 									<pre>Generating images... Please wait a few seconds.</pre>
 								</div>
 							)}
-							<div className="">
+							<div className="mt-2">
 								{chat.ImageB64 && chat.ImageB64[0] && (
 									<ImageGallery
 										//@ts-ignore
