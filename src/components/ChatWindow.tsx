@@ -77,6 +77,17 @@ const ChatWindow = ({
 				let resp
 				if (baseImage) {
 					resp = await submitControlNet({ prompt, baseImage })
+					console.log(resp.data)
+					if (resp.data.eta) {
+						let eta = resp.data.eta
+						alert.info(
+							`Please wait for ${resp.data.eta.round(
+								2
+							)} seconds while the server processes your data.`
+						)
+						await new Promise((resolve) => setTimeout(resolve, eta * 1000))
+						resp = await submitControlNet({ prompt, baseImage })
+					}
 				} else resp = await submitDALLE({ prompt })
 				return resp.data
 			} catch (error) {
