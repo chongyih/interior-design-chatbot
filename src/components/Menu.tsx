@@ -6,6 +6,7 @@ import { useAlert } from "react-alert"
 import { useDeleteChatMutation } from "../redux/chatApiSlice"
 import { useDeleteBaseMutation } from "../redux/imageApiSlice"
 import { IGPTPrompt } from "../types/prompt"
+import logo from "../assets/logo_with_text.png"
 
 const Menu = ({
 	baseImage,
@@ -52,7 +53,7 @@ const Menu = ({
 
 	return (
 		<div className="bg-neutral-900 w-72 h-screen flex items-center justify-center flex-col">
-			<p className="fixed top-3 text-3xl">Interior AI</p>
+			<img className="fixed top-[-35px]" src={logo} />
 			{baseImage && (
 				<div className="w-60 h-60 flex flex-col items-center justify-center">
 					<div className="flex flex-row mr-2">

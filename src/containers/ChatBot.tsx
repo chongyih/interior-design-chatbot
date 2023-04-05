@@ -49,7 +49,7 @@ const ChatBot = () => {
 			setBaseImage(resp.data.imageLink)
 		}
 
-		retrieveBaseImage()
+		localStorage.getItem("chat_id") ? retrieveBaseImage() : setBaseImage("")
 	}, [])
 
 	useEffect(() => {

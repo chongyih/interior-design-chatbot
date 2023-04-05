@@ -10,6 +10,7 @@ import {
 } from "../redux/imageApiSlice"
 
 import logo from "../assets/logo.png"
+import user from "../assets/user.png"
 import { useAlert } from "react-alert"
 
 const ChatWindow = ({
@@ -77,21 +78,20 @@ const ChatWindow = ({
 				let resp
 				if (baseImage) {
 					resp = await submitControlNet({ prompt, baseImage })
-					console.log(resp.data)
-					if (resp.data.eta) {
-						let eta = resp.data.eta
-						alert.info(
-							`Please wait for ${resp.data.eta.round(
-								2
-							)} seconds while the server processes your data.`
-						)
-						await new Promise((resolve) => setTimeout(resolve, eta * 1000))
-						resp = await submitControlNet({ prompt, baseImage })
-					}
 				} else resp = await submitDALLE({ prompt })
+
+				if (resp.error) {
+					alert.error("Error generating image. Please try again later.")
+					return
+				}
 				return resp.data
 			} catch (error) {
 				console.error(error)
+				if (!baseImage) {
+					alert.error("Error generating image. Please try again later.")
+					return
+				}
+
 				if (retryCount >= MAX_RETRIES) {
 					setError("Error generating DALL-E image. Please try again later.")
 					throw new Error("Maximum number of retries reached")
@@ -127,15 +127,15 @@ const ChatWindow = ({
 				scrollViewClassName="scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 px-10 py-4"
 			>
 				{chatHistory.map((chat, index) => (
-					<div key={index} className="flex flex-col mb-4">
+					<div key={index} className="flex flex-col mb-2">
 						<div className="flex flex-col mb-2">
 							{chat.UserPrompt && (
 								<>
-									<div className="flex items-center mb-1 justify-end">
-										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
-											<img src={logo} alt="Interio IO Logo" />
+									<div className="flex items-center mb-1 justify-end h-10">
+										<div className="bg-transparent w-5 h-5 rounded-full mr-2 flex items-center justify-center">
+											<img src={user} alt="Interio IO Logo" />
 										</div>
-										<p className="text-sm">{localStorage.getItem("name")}</p>
+										<p>{localStorage.getItem("name")}</p>
 									</div>
 									<div className="bg-gray-700 rounded-lg p-4">
 										<pre className="whitespace-pre-wrap text-left">
@@ -147,10 +147,10 @@ const ChatWindow = ({
 							{chat.GPTPrompt && (
 								<>
 									<div className="flex items-center mb-1">
-										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+										<div className="bg-transparent w-7 my-2 mr-3 rounded-full flex items-center justify-center">
 											<img src={logo} alt="Interio IO Logo" />
 										</div>
-										<p className="text-sm">Interio AI</p>
+										<p>Interio AI</p>
 									</div>
 									<div className="bg-gray-700 rounded-lg p-4">
 										<pre className="whitespace-pre-wrap text-left">
@@ -175,8 +175,7 @@ const ChatWindow = ({
 							{chat.DALLEPrompts && (
 								<div className="bg-gray-700 rounded-lg p-3 mt-2">
 									<pre>
-										Click on one of the prompts to and I will generate some
-										images!
+										Click on one of the prompts and I will generate some images!
 									</pre>
 									{
 										<div className="p-2">
@@ -209,19 +208,27 @@ const ChatWindow = ({
 									<pre>Generating images... Please wait a few seconds.</pre>
 								</div>
 							)}
-							<div className="mt-2">
+							<div className="mt-2 flex items-center justify-center flex-col">
 								{chat.ImageB64 && chat.ImageB64[0] && (
-									<ImageGallery
-										//@ts-ignore
-										ref={galleryRef}
-										onClick={(e) => selectBaseImage(index)}
-										items={chat.ImageB64.map((image) => {
-											return {
-												original: `data:img/png;base64,${image}`,
-												thumbnail: `data:img/png;base64,${image}`,
-											}
-										})}
-									/>
+									<>
+										<button
+											className="p-2 w-full"
+											onClick={() => selectBaseImage(index)}
+										>
+											Select As Base Image
+										</button>
+										<ImageGallery
+											//@ts-ignore
+											ref={galleryRef}
+											onClick={(e) => selectBaseImage(index)}
+											items={chat.ImageB64.map((image) => {
+												return {
+													original: `data:img/png;base64,${image}`,
+													thumbnail: `data:img/png;base64,${image}`,
+												}
+											})}
+										/>
+									</>
 								)}
 							</div>
 						</div>
