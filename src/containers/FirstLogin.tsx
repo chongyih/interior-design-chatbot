@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
-import InterioAILogo from "../assets/logo.png"
+import InterioAILogo from "../assets/logo_with_text.png"
 import { useCreateUserMutation } from "../redux/authApiSlice"
 import { useAlert } from "react-alert"
 
