@@ -57,8 +57,8 @@ const FileUpload = ({
 		<div className="absolute inset-0 flex flex-col items-center justify-center">
 			<span className="bg-transparent text-white font-semibold py-2 px-4 w-1/2 text-center">
 				Don't have a design in mind? No worries, start chatting to create your
-				base image! If you already have an image in mind, simply upload it to
-				get started.
+				base image! If you already have a design you want to build upon, simply
+				upload it to get started.
 			</span>
 			<div className="relative flex items-center justify-center h-60 border-dotted border-2 border-gray-400 rounded-lg w-1/2">
 				<input

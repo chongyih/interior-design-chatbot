@@ -147,7 +147,7 @@ const ChatWindow = ({
 							{chat.GPTPrompt && (
 								<>
 									<div className="flex items-center mb-1">
-										<div className="bg-transparent w-7 my-2 mr-3 rounded-full flex items-center justify-center">
+										<div className="bg-transparent w-5 my-2 mr-3 rounded-full flex items-center justify-center">
 											<img src={logo} alt="Interio IO Logo" />
 										</div>
 										<p>Interio AI</p>
