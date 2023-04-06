@@ -127,7 +127,7 @@ const ChatWindow = ({
 				scrollViewClassName="scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 px-10 py-4"
 			>
 				{chatHistory.map((chat, index) => (
-					<div key={index} className="flex flex-col mb-2">
+					<div key={index} className="flex flex-col">
 						<div className="flex flex-col mb-2">
 							{chat.UserPrompt && (
 								<>
