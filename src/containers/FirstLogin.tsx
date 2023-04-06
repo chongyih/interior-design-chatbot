@@ -25,6 +25,7 @@ const FirstLogin = () => {
 			setTimeout(() => {
 				localStorage.setItem("user_id", resp.data.id)
 				localStorage.setItem("name", resp.data.name)
+				localStorage.setItem("chat_id", resp.data.chat_id)
 				setCreatingAccount(false)
 			}, 2000)
 		} else {

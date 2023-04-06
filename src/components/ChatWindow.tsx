@@ -162,10 +162,10 @@ const ChatWindow = ({
 							{loadingGPT && index === chatHistory.length - 1 && (
 								<>
 									<div className="flex items-center mb-1">
-										<div className="bg-transparent w-8 h-8 rounded-full mr-2 flex items-center justify-center">
+										<div className="bg-transparent w-5 mt-2 mr-3 rounded-full flex items-center justify-center">
 											<img src={logo} alt="Interio IO Logo" />
 										</div>
-										<p className="text-sm">Interio AI</p>
+										<p className="mt-[8px]">Interio AI</p>
 									</div>
 									<div className="bg-gray-700 rounded-lg p-3 mt-2">
 										<pre>Generating response... Please wait a few seconds.</pre>
@@ -189,7 +189,7 @@ const ChatWindow = ({
 											</button>
 										</div>
 									}
-									{chat.DALLEPrompts?.map((dalle, dalleIndex) => (
+									{chat.DALLEPrompts?.split("|").map((dalle, dalleIndex) => (
 										<div key={index} className="p-2">
 											<button
 												onClick={(e) => sendDALLEPrompt(e, index, dalle)}

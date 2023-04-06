@@ -63,10 +63,10 @@ const Menu = ({
 						<pre className="mt-[0.45rem]">Base Image</pre>
 					</div>
 					<img
-						className={`w-60 h-60`}
+						className={`w-60 h-60 cursor-pointer`}
 						alt="Base Image"
 						src={baseImage}
-						onClick={() => null}
+						onClick={() => window.open(baseImage, "_blank")}
 					/>
 				</div>
 			)}
